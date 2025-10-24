@@ -27,6 +27,7 @@ jobs:
 
     - name: Commit new progs
       run: |
+        git fetch
         git config --global user.name 'metalfoxdev'
         git config --global user.email 'metalfoxdev@users.noreply.github.com'
         git commit -m "(DAILY) Update progs.json" ./src/progs.json
