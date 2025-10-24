@@ -1,4 +1,4 @@
-name: Update progs.json
+name: Update programme list
 
 # Run at 5am UTC every day
 on:
