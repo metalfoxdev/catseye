@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en" data-bs-theme="dark">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+
+    <title>A Cat's Eye View of Expiring VODs</title>
+  </head>
+  <body>
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+
+    <!-- https://github.com/EvanHahn/HumanizeDuration.js -->
+    <script src="humanize-duration.js"></script>
+
+    <script src="main.js"></script>
+    <script>loadTable()</script>
+
+    <h3 class="text-center" id="lu-textbox">Loading...</h3>
+    <table class="table table-hover table-striped min-vw-50">
+      <thead>
+        <tr>
+          <th scope="col">Expires In</th>
+          <th scope="col">Prog. Name</th>
+          <th scope="col">Ep. Name</th>
+        </tr>
+      </thead>
+      <tbody id="main-table">
+      </tbody>
+      </table>
+  <p class="text-center">This service is not endorsed in any way by NHK</p>
+  </body>
+</html>
+
