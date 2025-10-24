@@ -23,5 +23,8 @@ An alternate method has been found which involves the following steps:
 
 It's way slower than the old method, but it works.
 
+## API (sort of)
+You could use this service as an API by accessing the programme list from this URL: `https://metalfoxdev.github.io/catseye/progs.json`
+
 ## Disclaimer
 This service is not endorsed in any way by NHK and/or it's subsidiaries.
