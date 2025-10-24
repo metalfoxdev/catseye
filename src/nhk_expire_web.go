@@ -15,7 +15,12 @@ import (
 	"encoding/json"
 	"net/url"
 	"time"
+	"fmt"
 )
+
+// Declare constants
+const API_ROOT = "https://api.nhkworld.jp/"
+const NW_ROOT = "https://www3.nhk.or.jp/"
 
 // Initialise structs for video_episodes
 type Video struct {
@@ -25,14 +30,26 @@ type VideoProg struct {
 	Title string `json:"title"`
 	Url string `json:"url"`
 }
+type Tag struct {
+	Id string `json:"id"`
+	Name string `json:"name"`
+}
 type Episode struct {
 	Id string `json:"id"`
 	Url string `json:"url"`
 	Title string `json:"title"`
 	Video Video `json:"video"`
 	VideoProg VideoProg `json:"video_program"`
+	Tags []Tag `json:"tags"`
 }
+
+type Pagination struct {
+	Next string `json:"next"`
+	Previous string `json:"previous"`
+}
+
 type Vods struct {
+	Pagination Pagination `json:"pagination"`
 	Episodes []Episode `json:"items"`
 }
 
@@ -71,17 +88,29 @@ func getContent(url string) (content []byte, err error) {
 	return body, nil
 }
 
-func removeDuplicates(xs *[]string) {
-	found := make(map[string]bool)
-	j := 0
-	for i, x := range *xs {
-		if !found[x] {
-			found[x] = true
-			(*xs)[j] = (*xs)[i]
-			j++
+// Handles pagination
+func getCatVideos(id string) (Vods, error) {
+	var v Vods
+	var e []Episode
+	opt, _ := url.JoinPath("showsapi/v1/en/categories/", id, "/video_episodes")
+	for i := 0; i < 50; i++ {
+		v = Vods{}
+		log.Printf("Reading page %d", i+1)
+		path, _ := url.JoinPath(API_ROOT, opt)
+		resp, err := getContent(path)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		json.Unmarshal(resp, &v)
+		e = append(e, v.Episodes...)
+		if v.Pagination.Next != "" {
+			opt = v.Pagination.Next
+		} else {
+			v.Episodes = e
+			return v, nil
 		}
 	}
-	*xs = (*xs)[:j]
+	return v, fmt.Errorf("Pagination hit 50 page limit. Loop stopped to prevent infinite loop.")
 }
 
 // Dedupe function for the struct system
@@ -94,21 +123,27 @@ func existsInOutVods(ov OutVod, ovs []OutVod) (bool) {
 	return false
 }
 
+// Special check for Documentary 360
+func checkD360(t []Tag) (bool) {
+	for i := 0; i < len(t); i++ {
+		if (t[i].Id == "196" && t[i].Name == "Documentary 360") || (t[i].Name == "Documentary 360") {
+			return true
+		}
+	}
+	return false
+}
+
 func main() {
 
 	// Parse cmd flags
 	filePtr := flag.String("file", "./progs.json", "Output file for result")
 	flag.Parse()
 
-	// Declare constants
-	const API_ROOT = "https://api.nhkworld.jp/showsapi/v1/"
-	const NW_ROOT = "https://www3.nhk.or.jp/"
-
 	// Set offset for max threshold, 120 hours = 5 days
 	expiryOffset, _ := time.ParseDuration("120h")
 
 	// Get category list
-	catListUrl, _ := url.JoinPath(API_ROOT, "en/categories/")
+	catListUrl, _ := url.JoinPath(API_ROOT, "/showsapi/v1/en/categories/")
 	resp, err := getContent(catListUrl)
 	if err != nil {
 		log.Fatalln(err)
@@ -118,7 +153,6 @@ func main() {
 	log.Printf("Loaded %d categories", len(categories.Categories))
 
 	// Init variables for next step
-	var catUrl string
 	var vods Vods
 	var ovs OutVods
 	var ov OutVod
@@ -132,21 +166,23 @@ func main() {
 
 	// Process categories
 	for i := 0; i < len(categories.Categories); i++ {
+		vods = Vods{}
 		log.Printf("Scanning category '%s'", categories.Categories[i].Name)
-		catUrl, _ = url.JoinPath(API_ROOT, "en/categories/", categories.Categories[i].Id, "/video_episodes")
 
 		// Get category videos
-		resp, err := getContent(catUrl)
+		v, err := getCatVideos(categories.Categories[i].Id)
 		if err != nil {
 			log.Fatalln(err)
 		}
-		json.Unmarshal(resp, &vods)
+
+		// Declare vods
+		vods = v
 
 		// Scan category for expiring programmes
-		for i2 := 0; i2 < len(vods.Episodes); i2++ {
+		for j := 0; j < len(vods.Episodes); j++ {
 
 			// Convert ISO date to time struct
-			expiryDate, err := time.Parse(time.RFC3339, vods.Episodes[i2].Video.ExpiredAt)
+			expiryDate, err := time.Parse(time.RFC3339, vods.Episodes[j].Video.ExpiredAt)
 			if err != nil {
 				log.Fatalln(err)
 			}
@@ -154,15 +190,31 @@ func main() {
 			// Check if expiryDate meets threshold
 			// If so, add it to an array
 			if expiryMaxDate.Unix() > expiryDate.Unix() {
-				episodeUrl, _ = url.JoinPath(NW_ROOT, vods.Episodes[i2].Url)
-				progUrl, _ = url.JoinPath(NW_ROOT, vods.Episodes[i2].VideoProg.Url)
+				episodeUrl, _ = url.JoinPath(NW_ROOT, vods.Episodes[j].Url)
+				progUrl, _ = url.JoinPath(NW_ROOT, vods.Episodes[j].VideoProg.Url)
 
 				// Set programme attributes
-				ov.ProgName = vods.Episodes[i2].VideoProg.Title
-				ov.EpName = vods.Episodes[i2].Title
-				ov.ExpiredAt = vods.Episodes[i2].Video.ExpiredAt
+				ov.ProgName = vods.Episodes[j].VideoProg.Title
+				if checkD360(vods.Episodes[j].Tags) {
+					// Documentary 360's aren't grouped
+					// by show, they are grouped by tag.
+					// Therefore, special operations are conducted.
+					ov.ProgName = "Documentary 360"
+					ov.EpName = vods.Episodes[j].VideoProg.Title
+				} else if vods.Episodes[j].Title == "" {
+					// Handle single progs
+					// that are not part of a registered show
+					ov.EpName = ov.ProgName
+				} else {
+					ov.EpName = vods.Episodes[j].Title
+				}
+				ov.ExpiredAt = vods.Episodes[j].Video.ExpiredAt
 				ov.ProgUrl = progUrl
 				ov.EpUrl = episodeUrl
+
+				// Debuggering stuff
+				//log.Printf("Prog Name : %s", ov.ProgName)
+				//log.Printf("Ep Name   : %s", ov.EpName)
 
 				// Append if not already listed
 				if !existsInOutVods(ov, ovs.OutVod) {
