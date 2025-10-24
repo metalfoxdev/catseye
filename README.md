@@ -1,6 +1,9 @@
 # catseye
  *A Cat's Eye View of Expiring VODs on NHK World.*
 
+## To-do
+[] PWA support
+
 ## What it does
 The "Expiring Soon" function on the NHK World TV app was removed following the new API changes.
 This service restores such functionality using the new API.
