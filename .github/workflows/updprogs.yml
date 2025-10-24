@@ -29,7 +29,7 @@ jobs:
       run: |
         git config --global user.name 'metalfoxdev'
         git config --global user.email 'metalfoxdev@users.noreply.github.com'
-        git commit -am "(AUTO) Update progs.json"
+        git commit -m "(DAILY) Update progs.json" src/progs.json
         git push
 
       
