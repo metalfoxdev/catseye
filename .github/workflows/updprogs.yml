@@ -23,7 +23,6 @@ jobs:
         go-version: '1.20'
 
     - name: Run script
-      working-directory: ${{ github.workspace }}
       run: go run ./src/nhk_expire_web.go -file="src/progs.json"
 
     - name: Commit new progs
@@ -32,7 +31,7 @@ jobs:
         git fetch
         git config --global user.name 'metalfoxdev'
         git config --global user.email 'metalfoxdev@users.noreply.github.com'
-        git commit -m "(DAILY) Update progs.json" src/progs.json
+        git commit -m "(DAILY) Update progs.json" 'src/progs.json'
         git push
 
       
