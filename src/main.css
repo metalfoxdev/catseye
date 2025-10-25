@@ -1,0 +1,5 @@
+/* Table header */
+.main-table-header{
+  position:sticky;
+  top: 0;
+}
