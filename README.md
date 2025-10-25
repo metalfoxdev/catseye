@@ -1,6 +1,9 @@
 # catseye
  *A Cat's Eye View of Expiring VODs on NHK World.*
 
+## To-do
+- [ ] PWA support
+
 ## What it does
 The "Expiring Soon" function on the NHK World TV app was removed following the new API changes.
 This service restores such functionality using the new API.
@@ -22,6 +25,9 @@ An alternate method has been found which involves the following steps:
 4. Profit
 
 It's way slower than the old method, but it works.
+
+## API (sort of)
+You could use this service as an API by accessing the programme list from this URL: `https://metalfoxdev.github.io/catseye/progs.json`
 
 ## Disclaimer
 This service is not endorsed in any way by NHK and/or it's subsidiaries.
