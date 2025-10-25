@@ -38,4 +38,7 @@ function loadTable() {
     txtbox.innerHTML = "Last updated: " + data.last_updated;
   })
   .catch((error) => console.error("Error: ", error));
-}
+};
+
+// Main page script
+loadTable();
