@@ -15,6 +15,7 @@ import (
 	"encoding/json"
 	"net/url"
 	"time"
+	"strings"
 	"fmt"
 )
 
@@ -97,6 +98,7 @@ func getCatVideos(id string) (Vods, error) {
 		v = Vods{}
 		log.Printf("Reading page %d", i+1)
 		path, _ := url.JoinPath(API_ROOT, opt)
+		path = strings.Replace(path, "%3F", "?", -1) // Hacky solution lol
 		resp, err := getContent(path)
 		if err != nil {
 			log.Fatalln(err)
