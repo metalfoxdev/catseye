@@ -10,6 +10,7 @@ import (
 	"log"
 	"flag"
 	"io"
+	"slices"
 	"os"
 	"net/http"
 	"encoding/json"
@@ -94,11 +95,11 @@ func getCatVideos(id string) (Vods, error) {
 	var v Vods
 	var e []Episode
 	opt, _ := url.JoinPath("showsapi/v1/en/categories/", id, "/video_episodes")
-	for i := 0; i < 50; i++ {
+	for i := range 50 {
 		v = Vods{}
 		log.Printf("Reading page %d", i+1)
 		path, _ := url.JoinPath(API_ROOT, opt)
-		path = strings.Replace(path, "%3F", "?", -1) // Hacky solution lol
+		path = strings.ReplaceAll(path, "%3F", "?") // Hacky solution lol
 		resp, err := getContent(path)
 		if err != nil {
 			log.Fatalln(err)
@@ -117,17 +118,12 @@ func getCatVideos(id string) (Vods, error) {
 
 // Dedupe function for the struct system
 func existsInOutVods(ov OutVod, ovs []OutVod) (bool) {
-	for i := 0; i < len(ovs); i++ {
-		if ov == ovs[i] {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(ovs, ov)
 }
 
 // Special check for Documentary 360
 func checkD360(t []Tag) (bool) {
-	for i := 0; i < len(t); i++ {
+	for i := range t {
 		if (t[i].Id == "196" && t[i].Name == "Documentary 360") || (t[i].Name == "Documentary 360") {
 			return true
 		}
@@ -167,7 +163,7 @@ func main() {
 	log.Printf("Max expiry date set to '%s'", expiryMaxDate)
 
 	// Process categories
-	for i := 0; i < len(categories.Categories); i++ {
+	for i := range categories.Categories {
 		vods = Vods{}
 		log.Printf("Scanning category '%s'", categories.Categories[i].Name)
 
@@ -181,7 +177,7 @@ func main() {
 		vods = v
 
 		// Scan category for expiring programmes
-		for j := 0; j < len(vods.Episodes); j++ {
+		for j := range vods.Episodes {
 
 			// Convert ISO date to time struct
 			expiryDate, err := time.Parse(time.RFC3339, vods.Episodes[j].Video.ExpiredAt)
@@ -232,10 +228,11 @@ func main() {
 
 	// Write matches to text file
 	f, err := os.Create(*filePtr)
-	defer f.Close()
 	if err != nil {
 		log.Fatalln(err)
 	}
+	defer f.Close()
+
 	log.Printf("Writing to %s...", *filePtr)
 	ovJson, err := json.Marshal(ovs)
 	if err != nil {
